@@ -760,8 +760,8 @@
                 </p>
                 
                 <div class="max-w-xl mx-auto">
-                    <!-- UPDATED FORM -->
-                    <form id="test-form" action="https://formspree.io/f/xyzrnzpa" method="POST">
+                    <!-- UPDATED FORM FOR GOOGLE SHEETS -->
+                    <form id="test-form">
                         <div class="mb-6">
                             <label for="name" class="block text-left text-text-muted font-medium mb-2">Votre Nom Complet</label>
                             <input type="text" id="name" name="name" class="w-full bg-primary-dark border border-gray-700/50 text-text-light text-lg rounded-lg focus:ring-accent-indigo focus:border-accent-indigo p-3.5 transition duration-300" placeholder="Jean Dupont" required>
@@ -1041,52 +1041,53 @@
     </div>
 
     <script>
-        // --- NEW: Formspree Form Submission Logic ---
-        window.addEventListener('DOMContentLoaded', () => {
+        // --- NEW: Google Sheets Form Submission Logic ---
+        document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('test-form');
             if (form) {
-                form.addEventListener('submit', async function(event) {
-                    event.preventDefault(); // Prevent default form submission (page reload)
-
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
                     const submitButton = form.querySelector('button[type="submit"]');
                     const originalButtonText = submitButton.innerText;
-
-                    // Update button UI to show sending state
+                    
+                    // Update button UI
                     submitButton.innerText = 'Envoi en cours...';
                     submitButton.disabled = true;
 
+                    // Your API URL is already inserted here
+                    const apiUrl = 'https://sheetdb.io/api/v1/1cqrq8lqxy7rh'; 
+
                     const formData = new FormData(form);
+                    const data = Object.fromEntries(formData.entries());
 
-                    try {
-                        const response = await fetch(form.action, {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        });
-
-                        if (response.ok) {
-                            // On success, show a success modal and reset the form
+                    fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            data: data // SheetDB expects the data to be wrapped in a "data" object
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.created) {
                             showModal('Demande Reçue !', 'Merci ! Votre demande de test a bien été envoyée. Nous vous contacterons très prochainement.');
                             form.reset();
                         } else {
-                            // On failure, try to get error message from Formspree
-                            const errorData = await response.json();
-                            if (errorData.errors) {
-                                showModal('Erreur', errorData.errors.map(error => error.message).join(', '));
-                            } else {
-                                showModal('Erreur', 'Une erreur est survenue. Veuillez réessayer plus tard.');
-                            }
+                            showModal('Erreur', 'Une erreur est survenue. Veuillez réessayer.');
                         }
-                    } catch (error) {
-                        // On network error
-                        showModal('Erreur de Connexion', 'Une erreur de réseau est survenue. Veuillez vérifier votre connexion et réessayer.');
-                    } finally {
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showModal('Erreur de Connexion', 'Une erreur de réseau est survenue. Veuillez réessayer.');
+                    })
+                    .finally(() => {
                         // Restore button UI
                         submitButton.innerText = originalButtonText;
                         submitButton.disabled = false;
-                    }
+                    });
                 });
             }
         });
