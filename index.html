@@ -1041,49 +1041,74 @@
     </div>
 
     <script>
-        // --- CORRECTED: Google Sheets Form Submission Logic ---
+        // --- FINAL and DEBUGGED Google Sheets Form Submission Logic ---
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('test-form');
             if (form) {
                 form.addEventListener('submit', function(e) {
+                    // Prevent the form from doing the default page reload
                     e.preventDefault();
                     
                     const submitButton = form.querySelector('button[type="submit"]');
                     const originalButtonText = submitButton.innerText;
                     
-                    // Update button UI
+                    // 1. Update button UI to show loading state
                     submitButton.innerText = 'Envoi en cours...';
                     submitButton.disabled = true;
 
-                    // Your API URL
+                    // 2. Your API URL from SheetDB
                     const apiUrl = 'https://sheetdb.io/api/v1/1cqrq8lqxy7rh'; 
 
-                    const formData = new FormData(form);
-                    const data = Object.fromEntries(formData.entries());
+                    // 3. Manually get the data from each form field (most reliable method)
+                    const data = {
+                        name: document.getElementById('name').value,
+                        country: document.getElementById('country').value,
+                        email: document.getElementById('email').value
+                    };
 
+                    // --- DEBUGGING: Log the data to the console ---
+                    // To see this, open Developer Tools (F12) and click the "Console" tab.
+                    console.log('Sending data:', data);
+
+                    // 4. Send the data to your Google Sheet using the SheetDB API
                     fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        // THIS IS THE CORRECTED LINE
                         body: JSON.stringify(data)
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.created) {
-                            showModal('Demande Reçue !', 'Merci ! Votre demande de test a bien été envoyée. Nous vous contacterons très prochainement.');
-                            form.reset();
+                    .then(response => {
+                        // --- DEBUGGING: Log the full response ---
+                        console.log('SheetDB Response:', response);
+                        
+                        // Check if the HTTP response is successful (status 200-299)
+                        if (response.ok) {
+                            // If the response is OK, parse the JSON
+                            return response.json();
                         } else {
-                            showModal('Erreur', 'Une erreur est survenue. Veuillez réessayer.');
+                            // If the response is NOT OK, throw an error with the status text
+                            throw new Error(`Server responded with status: ${response.status} ${response.statusText}`);
+                        }
+                    })
+                    .then(result => {
+                        // This part runs only if the response was OK
+                        // Check if SheetDB confirms that the row was created
+                        if (result.created) {
+                            showModal('Demande Reçue !', 'Merci ! Votre demande de test a bien été envoyée. Nous vous contacterons très prochainement.');
+                            form.reset(); // Clear the form fields for the next entry
+                        } else {
+                            // This case should ideally not happen if response.ok was true
+                            showModal('Erreur', 'Une erreur inattendue est survenue. Veuillez réessayer.');
                         }
                     })
                     .catch(error => {
-                        console.error('Error:', error);
-                        showModal('Erreur de Connexion', 'Une erreur de réseau est survenue. Veuillez réessayer.');
+                        // This part runs if there was a network error or if we threw an error above
+                        console.error('Fetch Error:', error);
+                        showModal('Erreur de Connexion', `Une erreur est survenue : ${error.message}. Veuillez réessayer.`);
                     })
                     .finally(() => {
-                        // Restore button UI
+                        // 5. Restore the button UI in all cases (success or failure)
                         submitButton.innerText = originalButtonText;
                         submitButton.disabled = false;
                     });
