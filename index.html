@@ -1041,7 +1041,7 @@
     </div>
 
     <script>
-        // --- NEW: Google Sheets Form Submission Logic ---
+        // --- CORRECTED: Google Sheets Form Submission Logic ---
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('test-form');
             if (form) {
@@ -1055,7 +1055,7 @@
                     submitButton.innerText = 'Envoi en cours...';
                     submitButton.disabled = true;
 
-                    // Your API URL is already inserted here
+                    // Your API URL
                     const apiUrl = 'https://sheetdb.io/api/v1/1cqrq8lqxy7rh'; 
 
                     const formData = new FormData(form);
@@ -1066,9 +1066,8 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            data: data // SheetDB expects the data to be wrapped in a "data" object
-                        })
+                        // THIS IS THE CORRECTED LINE
+                        body: JSON.stringify(data)
                     })
                     .then(response => response.json())
                     .then(data => {
